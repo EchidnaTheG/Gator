@@ -27,11 +27,11 @@ func main(){
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("SYSTEM: Not enough arguments given.")
-		return
+		os.Exit(1)
 	}
 	 _,ok := Commands.TypeOf[args[1]] ; if !ok{
 		fmt.Println("SYSTEM: Command Not Detected.")
-		return
+		os.Exit(1)
 	}
 	// excluding program name
 	args = args[1:]
@@ -39,7 +39,9 @@ func main(){
 	err = Commands.Run(&s,cmd)
 	if err != nil{
 		fmt.Printf("SYSTEM: %v\n", err)
+		os.Exit(1)
 	}
+	os.Exit(0)
 	
 
 
