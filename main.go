@@ -1,10 +1,13 @@
-package main 
-import(
+package main
+
+import (
+	"database/sql"
 	"fmt"
-	"github.com/EchidnaTheG/Gator/internal/config"
-	"github.com/EchidnaTheG/Gator/internal/commands"
 	"os"
-	
+	"github.com/EchidnaTheG/Gator/internal/commands"
+	"github.com/EchidnaTheG/Gator/internal/config"
+	"github.com/EchidnaTheG/Gator/internal/database"
+	_ "github.com/lib/pq"
 )
 
 
@@ -17,12 +20,22 @@ func main(){
 		fmt.Printf("SYSTEM: %v\n", err)
 	}
 	s.Ptoconfig=pToValue
+	dbURL := s.Ptoconfig.Db_url
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil{
+		fmt.Printf("SYSTEM: Error Opening Up Postgres, %v\n",err)
+		os.Exit(1)
+	}
+	dbQueries := database.New(db)
+	s.Db = dbQueries
+
 
 	//registering all the commands with their handlers
 	var Commands commands.Commands
 	Commands.TypeOf = make(map[string]func(s *commands.State, cmd commands.Command) error)
 	Commands.Register("login",commands.HandlerLogin)
-
+	Commands.Register("register",commands.HandlerRegister)
+	Commands.Register("reset",commands.HandlerReset)
 	// collecting args
 	args := os.Args
 	if len(args) < 2 {
