@@ -127,9 +127,89 @@ func HandlerAddFeed(s *State,cmd Command) error{
 	if err != nil {
 		return err
 	}
+	s.Db.CreateFeedFollow(context.Background(),database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Userid:    userID,
+		Feedid: DBFeed.ID,
+	})
 	fmt.Printf("%v\n",DBFeed)
 	return nil
 }
+
+func helperFunctionForFeeds(s *State, feedUserID  uuid.UUID ) (string, error){
+	User, err := s.Db.GetUserByID(context.Background(),feedUserID)
+	if err != nil{
+		return "", err
+	}
+	return User.Name, nil
+}
+
+func HandlerFeeds(s *State,cmd Command) error{
+	Feeds, err := s.Db.GetFeeds(context.Background())
+	if err != nil{
+		return err
+	}
+	for i, Feed := range Feeds{
+		name, err := helperFunctionForFeeds(s,Feed.Userid)
+		if err != nil{
+			return err
+		}
+		fmt.Printf("%v.\n Name: %v\n URL: %v\n Created By: %v\n", i+1, Feed.Name.String, Feed.Url.String, name)
+
+	}
+	return nil
+
+}
+
+func HandlerFollow(s *State,cmd Command) error{
+	if len(cmd.Arguments) < 2{
+		return fmt.Errorf("not enough arguments")
+	}
+
+	Feed, err := s.Db.LookUpFeedByURL(context.Background(), sql.NullString{String: cmd.Arguments[1], Valid: true})
+	if err != nil{
+		return err
+	}
+	feedid := Feed.ID
+	User, err := s.Db.GetUser(context.Background(), s.Ptoconfig.Current_user_name)
+	if err != nil{
+		return err
+	}
+	userID := User.ID
+	s.Db.CreateFeedFollow(context.Background(),database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Userid:    userID,
+		Feedid: feedid,
+	})
+	fmt.Printf("Name of Feed Followed: %v\nBy Current User: %v\n",Feed.Name.String,User.Name)
+	return nil
+}
+
+func HandlerFollowing(s *State,cmd Command) error{
+	User, err := s.Db.GetUser(context.Background(), s.Ptoconfig.Current_user_name)
+	if err != nil{
+		return err
+	}
+	userID := User.ID
+	FeedFollows, err :=s.Db.GetFeedFollowsForUser(context.Background(), userID)
+	if err != nil{
+		return err
+	}
+
+	for _, FeedFollow := range FeedFollows{
+		Feed, err := s.Db.LookUpFeedByID(context.Background(),FeedFollow.Feedid)
+		if err != nil{
+			return err
+		}
+		fmt.Printf("Following: %v\n",Feed.Name.String )
+	}
+	return nil
+}
+
 
 type Commands struct{
 	TypeOf map[string]func(s *State, cmd Command) error

@@ -21,3 +21,8 @@ DELETE FROM users *;
 SELECT *
 FROM users
 ORDER BY id;
+
+-- name: GetUserByID :one
+SELECT *
+FROM users
+WHERE id=$1;
