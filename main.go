@@ -1,10 +1,13 @@
-package main 
-import(
+package main
+
+import (
+	"database/sql"
 	"fmt"
-	"github.com/EchidnaTheG/Gator/internal/config"
-	"github.com/EchidnaTheG/Gator/internal/commands"
 	"os"
-	
+	"github.com/EchidnaTheG/Gator/internal/commands"
+	"github.com/EchidnaTheG/Gator/internal/config"
+	"github.com/EchidnaTheG/Gator/internal/database"
+	_ "github.com/lib/pq"
 )
 
 
@@ -17,21 +20,34 @@ func main(){
 		fmt.Printf("SYSTEM: %v\n", err)
 	}
 	s.Ptoconfig=pToValue
+	dbURL := s.Ptoconfig.Db_url
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil{
+		fmt.Printf("SYSTEM: Error Opening Up Postgres, %v\n",err)
+		os.Exit(1)
+	}
+	dbQueries := database.New(db)
+	s.Db = dbQueries
+
 
 	//registering all the commands with their handlers
 	var Commands commands.Commands
 	Commands.TypeOf = make(map[string]func(s *commands.State, cmd commands.Command) error)
 	Commands.Register("login",commands.HandlerLogin)
-
+	Commands.Register("register",commands.HandlerRegister)
+	Commands.Register("reset",commands.HandlerReset)
+	Commands.Register("users", commands.HandlerUsers)
+	Commands.Register("agg", commands.HandlerAgg)
+	Commands.Register("addfeed", commands.HandlerAddFeed)
 	// collecting args
 	args := os.Args
 	if len(args) < 2 {
 		fmt.Println("SYSTEM: Not enough arguments given.")
-		return
+		os.Exit(1)
 	}
 	 _,ok := Commands.TypeOf[args[1]] ; if !ok{
 		fmt.Println("SYSTEM: Command Not Detected.")
-		return
+		os.Exit(1)
 	}
 	// excluding program name
 	args = args[1:]
@@ -39,7 +55,9 @@ func main(){
 	err = Commands.Run(&s,cmd)
 	if err != nil{
 		fmt.Printf("SYSTEM: %v\n", err)
+		os.Exit(1)
 	}
+	os.Exit(0)
 	
 
 
