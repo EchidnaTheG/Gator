@@ -2,11 +2,13 @@ package commands
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/EchidnaTheG/Gator/internal/config"
 	"github.com/EchidnaTheG/Gator/internal/database"
+	"github.com/EchidnaTheG/Gator/internal/rss"
 	"github.com/google/uuid"
 )
 
@@ -89,6 +91,43 @@ func HandlerUsers(s *State,cmd Command) error{
 		}
 		fmt.Printf("* %v\n",user.Name)
 	}
+	return nil
+}
+
+func HandlerAgg(s *State,cmd Command) error{
+	if len(cmd.Arguments) <= 1 {
+		return fmt.Errorf("not enough arguments")
+	}
+    RSSFeed, err :=rss.FetchFeed(context.Background(),cmd.Arguments[1])
+	if err != nil{
+		return nil
+	}
+	fmt.Printf("%v\n", *RSSFeed)
+	return nil
+}
+
+func HandlerAddFeed(s *State,cmd Command) error{
+	if len(cmd.Arguments) <= 2 {
+		return fmt.Errorf("not enough arguments")
+	}
+	current_user := s.Ptoconfig.Current_user_name
+	User, err := s.Db.GetUser(context.Background(),current_user)
+	if err != nil{
+		return err
+	}
+	userID := User.ID
+	DBFeed,err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      sql.NullString{String: cmd.Arguments[1], Valid: true},
+		Url:       sql.NullString{String: cmd.Arguments[2], Valid: true},
+		Userid:    userID,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v\n",DBFeed)
 	return nil
 }
 
