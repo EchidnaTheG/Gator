@@ -7,6 +7,7 @@ import (
 	"github.com/EchidnaTheG/Gator/internal/commands"
 	"github.com/EchidnaTheG/Gator/internal/config"
 	"github.com/EchidnaTheG/Gator/internal/database"
+	"github.com/EchidnaTheG/Gator/internal/handlers"
 	_ "github.com/lib/pq"
 )
 
@@ -35,17 +36,18 @@ func main(){
 	//registering all the commands with their handlers
 	var Commands commands.Commands
 	Commands.TypeOf = make(map[string]func(s *commands.State, cmd commands.Command) error)
-	Commands.Register("login",commands.HandlerLogin)
-	Commands.Register("register",commands.HandlerRegister)
-	Commands.Register("reset",commands.HandlerReset)
-	Commands.Register("users", commands.HandlerUsers)
-	Commands.Register("agg", commands.HandlerAgg)
-	Commands.Register("addfeed", commands.MiddlewareLoggedIn(commands.HandlerAddFeed))
-	Commands.Register("feeds", commands.HandlerFeeds)
-	Commands.Register("follow", commands.MiddlewareLoggedIn(commands.HandlerFollow))
-	Commands.Register("following", commands.MiddlewareLoggedIn(commands.HandlerFollowing))
+	Commands.Register("login",handlers.HandlerLogin)
+	Commands.Register("register",handlers.HandlerRegister)
+	Commands.Register("reset",handlers.HandlerReset)
+	Commands.Register("users", handlers.HandlerUsers)
+	Commands.Register("agg", handlers.HandlerAgg)
+	Commands.Register("addfeed", commands.MiddlewareLoggedIn(handlers.HandlerAddFeed))
+	Commands.Register("feeds", handlers.HandlerFeeds)
+	Commands.Register("follow", commands.MiddlewareLoggedIn(handlers.HandlerFollow))
+	Commands.Register("following", commands.MiddlewareLoggedIn(handlers.HandlerFollowing))
+	Commands.Register("unfollow", commands.MiddlewareLoggedIn(handlers.HandlerUnfollow))
 
-	
+
 	// collecting args
 	args := os.Args
 	if len(args) < 2 {

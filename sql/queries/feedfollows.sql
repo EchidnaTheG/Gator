@@ -19,3 +19,9 @@ ON inserted_feed_follow.feedid = feeds.id;
 SELECT *
 FROM feed_follows
 WHERE userid = $1;
+
+
+-- name: UnfollowFeedByUser :exec
+
+DELETE FROM feed_follows *
+WHERE userid = $1 AND feedid = $2;
