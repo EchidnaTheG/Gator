@@ -11,6 +11,8 @@ import (
 )
 
 
+
+
 func main(){
 	// s is a struct with a pointer to the value that represents the state of the db
 	var s commands.State
@@ -38,10 +40,12 @@ func main(){
 	Commands.Register("reset",commands.HandlerReset)
 	Commands.Register("users", commands.HandlerUsers)
 	Commands.Register("agg", commands.HandlerAgg)
-	Commands.Register("addfeed", commands.HandlerAddFeed)
+	Commands.Register("addfeed", commands.MiddlewareLoggedIn(commands.HandlerAddFeed))
 	Commands.Register("feeds", commands.HandlerFeeds)
-	Commands.Register("follow", commands.HandlerFollow)
-	Commands.Register("following", commands.HandlerFollowing)
+	Commands.Register("follow", commands.MiddlewareLoggedIn(commands.HandlerFollow))
+	Commands.Register("following", commands.MiddlewareLoggedIn(commands.HandlerFollowing))
+
+	
 	// collecting args
 	args := os.Args
 	if len(args) < 2 {

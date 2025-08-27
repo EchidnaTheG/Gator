@@ -106,23 +106,17 @@ func HandlerAgg(s *State,cmd Command) error{
 	return nil
 }
 
-func HandlerAddFeed(s *State,cmd Command) error{
+func HandlerAddFeed(s *State,cmd Command, User database.User) error{
 	if len(cmd.Arguments) <= 2 {
 		return fmt.Errorf("not enough arguments")
 	}
-	current_user := s.Ptoconfig.Current_user_name
-	User, err := s.Db.GetUser(context.Background(),current_user)
-	if err != nil{
-		return err
-	}
-	userID := User.ID
 	DBFeed,err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Name:      sql.NullString{String: cmd.Arguments[1], Valid: true},
 		Url:       sql.NullString{String: cmd.Arguments[2], Valid: true},
-		Userid:    userID,
+		Userid:    User.ID,
 	})
 	if err != nil {
 		return err
@@ -131,7 +125,7 @@ func HandlerAddFeed(s *State,cmd Command) error{
 		ID:        uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		Userid:    userID,
+		Userid:    User.ID,
 		Feedid: DBFeed.ID,
 	})
 	fmt.Printf("%v\n",DBFeed)
@@ -163,7 +157,7 @@ func HandlerFeeds(s *State,cmd Command) error{
 
 }
 
-func HandlerFollow(s *State,cmd Command) error{
+func HandlerFollow(s *State,cmd Command, User database.User) error{
 	if len(cmd.Arguments) < 2{
 		return fmt.Errorf("not enough arguments")
 	}
@@ -173,10 +167,6 @@ func HandlerFollow(s *State,cmd Command) error{
 		return err
 	}
 	feedid := Feed.ID
-	User, err := s.Db.GetUser(context.Background(), s.Ptoconfig.Current_user_name)
-	if err != nil{
-		return err
-	}
 	userID := User.ID
 	s.Db.CreateFeedFollow(context.Background(),database.CreateFeedFollowParams{
 		ID:        uuid.New(),
@@ -189,11 +179,7 @@ func HandlerFollow(s *State,cmd Command) error{
 	return nil
 }
 
-func HandlerFollowing(s *State,cmd Command) error{
-	User, err := s.Db.GetUser(context.Background(), s.Ptoconfig.Current_user_name)
-	if err != nil{
-		return err
-	}
+func HandlerFollowing(s *State,cmd Command, User database.User) error{
 	userID := User.ID
 	FeedFollows, err :=s.Db.GetFeedFollowsForUser(context.Background(), userID)
 	if err != nil{
@@ -210,7 +196,16 @@ func HandlerFollowing(s *State,cmd Command) error{
 	return nil
 }
 
-
+func MiddlewareLoggedIn(handler func(s *State, cmd Command, user database.User) error) (func(*State, Command) error){
+	return func(s *State,cmd Command) error{
+		current_user := s.Ptoconfig.Current_user_name
+		User, err := s.Db.GetUser(context.Background(),current_user)
+		if err != nil{
+			return err
+		}
+		return handler(s,cmd,User)
+	}
+}
 type Commands struct{
 	TypeOf map[string]func(s *State, cmd Command) error
 }
