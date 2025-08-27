@@ -48,3 +48,81 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 	)
 	return i, err
 }
+
+const getFeeds = `-- name: GetFeeds :many
+SELECT id, created_at, updated_at, name, url, userid 
+FROM feeds
+ORDER BY id
+`
+
+func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getFeeds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Feed
+	for rows.Next() {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.Url,
+			&i.Userid,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lookUpFeedByID = `-- name: LookUpFeedByID :one
+
+SELECT id, created_at, updated_at, name, url, userid
+FROM FEEDS
+WHERE id = $1
+`
+
+func (q *Queries) LookUpFeedByID(ctx context.Context, id uuid.UUID) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, lookUpFeedByID, id)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Url,
+		&i.Userid,
+	)
+	return i, err
+}
+
+const lookUpFeedByURL = `-- name: LookUpFeedByURL :one
+
+SELECT id, created_at, updated_at, name, url, userid
+FROM FEEDS
+WHERE URL = $1
+`
+
+func (q *Queries) LookUpFeedByURL(ctx context.Context, url sql.NullString) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, lookUpFeedByURL, url)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Url,
+		&i.Userid,
+	)
+	return i, err
+}
